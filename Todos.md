@@ -2,7 +2,7 @@
 
 ## Stages
 
-- [ ] Bind to a port
+- [x] Bind to a port
 - [ ] Respond with 200
 - [ ] Extract URL path
 - [ ] Respond with body
