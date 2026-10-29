@@ -6,7 +6,7 @@
 - [x] Respond with 200
 - [x] Extract URL path
 - [x] Respond with body
-- [ ] Read header
+- [x] Read header
 - [ ] Concurrent connections
 - [ ] Return a file
 - [ ] Read request body

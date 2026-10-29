@@ -5,7 +5,7 @@ PORT = 4221
 REQUEST_BUFFER = 1024
 
 def parse_http_request(request: bytes) -> dict:
-    res = { "request_line": {} }
+    res = { "request_line": {}, "headers": {} }
     crlf = b'\r\n'
 
     # Parse request line or start-line
@@ -15,7 +15,15 @@ def parse_http_request(request: bytes) -> dict:
     res["request_line"]["request_target"] = request_line_parts[1].decode()
     res["request_line"]["protocol"] = request_line_parts[2].decode()
 
-    # TODO: Parse headers
+    # Parse headers
+    headers_start_pos = request_line_end_pos + 2
+    headers_end_pos = request.find(crlf + crlf)
+    headers = request[headers_start_pos:headers_end_pos].split(crlf)
+    for header in headers:
+        field, value = header.split(b': ')
+        field_str = field.decode().lower()
+        res["headers"][field_str] = value.decode()
+
     # TODO: Parse body
 
     return res
@@ -47,6 +55,14 @@ def main():
             response += b'Content-Length: ' + f"{echo_str_len}".encode()
             response += b'\r\n\r\n'
             response += echo_str.encode()
+        elif request_path == "/user-agent":
+            user_agent = request_dict["headers"]["user-agent"]
+            user_agent_len = len(user_agent.encode())
+            response = b'HTTP/1.1 200 OK\r\n'
+            response += b'Content-Type: text/plain\r\n'
+            response += b'Content-Length: ' + f"{user_agent_len}".encode()
+            response += b'\r\n\r\n'
+            response += user_agent.encode()
         elif request_path == "/":
             response = b'HTTP/1.1 200 OK\r\n\r\n'
         else:
