@@ -1,4 +1,7 @@
 import socket
+# import multithreading
+# import threading
+# import time
 
 HOST = "localhost"
 PORT = 4221
@@ -64,12 +67,17 @@ def main():
             response += b'\r\n\r\n'
             response += user_agent.encode()
         elif request_path == "/":
-            response = b'HTTP/1.1 200 OK\r\n\r\n'
+            response = b'HTTP/1.1 200 OK\r\n'
+            response += b'Content-Length: 0\r\n\r\n'
         else:
-            response = b'HTTP/1.1 404 Not Found\r\n\r\n'
+            response = b'HTTP/1.1 404 Not Found\r\n'
+            response += b'Content-Length: 0\r\n\r\n'
 
         client_socket.sendall(response)
         print(f"==> Sent response to HTTP Client at {client_address}:\n{response}")
+
+        # TODO: not sure if needed
+        # client_socket.shutdown(socket.SHUT_RDWR)
 
         client_socket.close()
 
