@@ -4,7 +4,7 @@
 
 - [x] Bind to a port
 - [x] Respond with 200
-- [ ] Extract URL path
+- [x] Extract URL path
 - [ ] Respond with body
 - [ ] Read header
 - [ ] Concurrent connections
