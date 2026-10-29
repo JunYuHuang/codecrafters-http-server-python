@@ -38,9 +38,19 @@ def main():
         if request_dict:
             request_path = request_dict["request_line"]["request_target"]
 
-        response = b'HTTP/1.1 404 Not Found\r\n\r\n'
-        if request_path == "/":
+        response = b''
+        if len(request_path) > 6 and request_path[:6] == "/echo/":
+            echo_str = request_path[6:]
+            echo_str_len = len(echo_str.encode())
+            response = b'HTTP/1.1 200 OK\r\n'
+            response += b'Content-Type: text/plain\r\n'
+            response += b'Content-Length: ' + f"{echo_str_len}".encode()
+            response += b'\r\n\r\n'
+            response += echo_str.encode()
+        elif request_path == "/":
             response = b'HTTP/1.1 200 OK\r\n\r\n'
+        else:
+            response = b'HTTP/1.1 404 Not Found\r\n\r\n'
 
         client_socket.sendall(response)
         print(f"==> Sent response to HTTP Client at {client_address}:\n{response}")

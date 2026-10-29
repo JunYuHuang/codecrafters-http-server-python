@@ -145,7 +145,7 @@ git push origin master
         - set `client_socket` object that represents HTTP client's TCP socket connection
         - set `request_bytes` to bytes (that represent a HTTP Request) received from `client_socket`
         - set hashmap `request_dict` to `parse_http_request(request_bytes)`
-        - set string `request_path` to `request_dict["header"]["request_target"]`
+        - set string `request_path` to `request_dict["request_line"]["request_target"]`
         - if `request_path` is `/`,
             - send HTTP `200 OK` response
         - else,
