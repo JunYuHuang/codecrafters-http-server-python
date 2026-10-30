@@ -53,7 +53,9 @@ git push origin master
     - side effects:
         - optional: prints logs to show history of actions
     - questions
-        - how to set up HTTP server to support concurrent (non-blocking?) connections? 
+        - how to set up HTTP server to support concurrent (non-blocking?) connections?
+            - multi-threading; spawn a new thread per TCP (socket) connection when a HTTP client connects to the HTTP server
+            - async, non-blocking thread (like Node.js event loop); make receiving from and sending bytes to HTTP clients async to not block the single thread running the HTTP server 
     - notes
         - for this stage, can assume request target in HTTP Request header follows the `origin-form` format per [RFC-9112](https://datatracker.ietf.org/doc/html/rfc9112#section-3.2)
         - server program can handle multiple HTTP requests from multiple HTTP clients
@@ -115,30 +117,33 @@ git push origin master
         - `parse_http_request(request: bytes) -> hashmap`
             - converts `request` to a string from bytes
             - returns a hashmap that maps all the HTTP request components from `request` to their associated string keys and string values
+        - `handle_http_client(client_socket: Socket) -> None`
+            - set `request_bytes` to bytes (that represent a HTTP Request) received from `client_socket`
+            - set hashmap `request_dict` to `parse_http_request(request_bytes)`
+            - set string `request_path` to `request_dict["request_line"]["request_target"]`
+            - if `request_path` matches regex expression `/echo/{str}`,
+                - send HTTP `200 OK` response with:
+                    - headers:
+                        - `Content-Type` = `text/plain`
+                        - `Content-Length` = length of `{str}` in bytes
+                    - body:
+                        - set to `{str}`
+            - if `request_path` is `/user-agent`,
+                - set string `user_agent` to `request["headers"]["user-agent"]`
+                - send HTTP `200 OK` response with:
+                    - headers:
+                        - `Content-Type` = `text/plain`
+                        - `Content-Length` = length of `user_agent` in bytes
+                    - body:
+                        - set to `user_agent`
+            - else if `request_path` is `/`,
+                - send HTTP `200 OK` response
+            - else,
+                - send HTTP `404 Not Found` response
+            - close `client_socket`
     - server creates a TCP socket that binds to a host and port
     - server listens for TCP clients
     - in an infinite loop,
+        - accept the client TCP connection
         - set `client_socket` object that represents HTTP client's TCP socket connection
-        - set `request_bytes` to bytes (that represent a HTTP Request) received from `client_socket`
-        - set hashmap `request_dict` to `parse_http_request(request_bytes)`
-        - set string `request_path` to `request_dict["request_line"]["request_target"]`
-        - if `request_path` matches regex expression `/echo/{str}`,
-            - send HTTP `200 OK` response with:
-                - headers:
-                    - `Content-Type` = `text/plain`
-                    - `Content-Length` = length of `{str}` in bytes
-                - body:
-                    - set to `{str}`
-        - if `request_path` is `/user-agent`,
-            - set string `user_agent` to `request["headers"]["user-agent"]`
-            - send HTTP `200 OK` response with:
-                - headers:
-                    - `Content-Type` = `text/plain`
-                    - `Content-Length` = length of `user_agent` in bytes
-                - body:
-                    - set to `user_agent`
-        - else if `request_path` is `/`,
-            - send HTTP `200 OK` response
-        - else,
-            - send HTTP `404 Not Found` response
-        - close `client_socket`
+        - spawn a new thread that runs `handle_http_client(client_socket)`
