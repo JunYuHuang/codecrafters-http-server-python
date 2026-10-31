@@ -39,7 +39,10 @@ def parse_http_request(request: bytes) -> dict:
     body_start_pos = headers_end_pos + 5
 
     # Return early if no body
-    if res["headers"].get("content-length", 0) == "0" or body_start_pos >= REQUEST_LEN:
+    if (
+        res["headers"].get("content-length", 0) == "0" or
+        body_start_pos >= REQUEST_LEN:
+    )
         return res
 
     body_end_pos = body_start_pos + int(res["headers"]["content-length"]) - 1
@@ -77,6 +80,8 @@ def handle_http_client(
                 request_dict["headers"]["accept-encoding"].find("gzip") != -1
             )
             response = b'HTTP/1.1 200 OK\r\n'
+            if should_close_connection:
+                response += b'Connection: close\r\n'
             response += b'Content-Type: text/plain\r\n'
 
             if has_accept_encoding_gzip:
@@ -96,6 +101,8 @@ def handle_http_client(
             user_agent = request_dict["headers"]["user-agent"]
             user_agent_len = len(user_agent.encode())
             response = b'HTTP/1.1 200 OK\r\n'
+            if should_close_connection:
+                response += b'Connection: close\r\n'
             response += b'Content-Type: text/plain\r\n'
             response += b'Content-Length: ' + f"{user_agent_len}".encode()
             response += b'\r\n\r\n'
@@ -111,9 +118,13 @@ def handle_http_client(
                 filename_file.write(request_dict["body"])
                 filename_file.close()
                 response += b'HTTP/1.1 201 Created\r\n'
+                if should_close_connection:
+                    response += b'Connection: close\r\n'
                 response += b'Content-Length: 0\r\n\r\n'
             elif method == "GET" and os.path.exists(file_path):
                 response += b'HTTP/1.1 200 OK\r\n'
+                if should_close_connection:
+                    response += b'Connection: close\r\n'
                 response += b'Content-Type: application/octet-stream\r\n'
                 file_size = os.stat(file_path).st_size
                 response += b'Content-Length: ' + f"{file_size}".encode()
@@ -123,16 +134,25 @@ def handle_http_client(
                 filename_file.close()
             else:
                 response += b'HTTP/1.1 404 Not Found\r\n'
+                if should_close_connection:
+                    response += b'Connection: close\r\n'
                 response += b'Content-Length: 0\r\n\r\n'
         elif request_path == "/":
             response = b'HTTP/1.1 200 OK\r\n'
+            if should_close_connection:
+                response += b'Connection: close\r\n'
             response += b'Content-Length: 0\r\n\r\n'
         else:
             response = b'HTTP/1.1 404 Not Found\r\n'
+            if should_close_connection:
+                response += b'Connection: close\r\n'
             response += b'Content-Length: 0\r\n\r\n'
 
         client_socket.sendall(response)
-        print(f"==> Sent response to HTTP Client at {client_address}:\n{response}")
+        print((
+            "==> Sent response to HTTP Client at " +
+            f"{client_address}:\n{response}"
+        ))
 
     client_socket.close()
 
