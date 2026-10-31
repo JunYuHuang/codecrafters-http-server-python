@@ -65,8 +65,13 @@ def handle_http_client(
         echo_str_len = len(echo_str.encode())
         response = b'HTTP/1.1 200 OK\r\n'
         response += b'Content-Type: text/plain\r\n'
-        response += b'Content-Length: ' + f"{echo_str_len}".encode()
-        response += b'\r\n\r\n'
+        response += b'Content-Length: ' + f"{echo_str_len}".encode() + b'\r\n'
+        if (
+            "accept-encoding" in request_dict["headers"] and
+            request_dict["headers"]["accept-encoding"] == "gzip"
+        ):
+            response += b'Content-Encoding: gzip\r\n'
+        response += b'\r\n'
         response += echo_str.encode()
     elif request_path == "/user-agent":
         user_agent = request_dict["headers"]["user-agent"]

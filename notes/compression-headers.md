@@ -216,6 +216,32 @@ git push origin master
             ```
             HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n
             ```
+    - ex.8: send Request with valid header `Accept-Encoding: gzip`
+        - start HTTP server program in 1 terminal:
+            ```
+            ./your_program.sh
+            ```
+        - send HTTP POST Request to server in another terminal:
+            ```
+            curl -v -H "Accept-Encoding: gzip" http://localhost:4221/echo/abc
+            ```
+        - HTTP server program responds to client's HTTP request with response:
+            ```
+            HTTP/1.1 200 OK \r\nContent-Length: {size_in_bytes}\r\nContent-Type: text/plain\r\nContent-Encoding: gzip\r\n\r\n
+            ```
+    - ex.9: send Request with invalid header `Accept-Encoding: invalid-encdoing`
+        - start HTTP server program in 1 terminal:
+            ```
+            ./your_program.sh
+            ```
+        - send HTTP POST Request to server in another terminal:
+            ```
+            curl -v -H "Accept-Encoding: invalid-encoding" http://localhost:4221/echo/abc
+            ```
+        - HTTP server program responds to client's HTTP request with response:
+            ```
+            HTTP/1.1 200 OK \r\nContent-Length: {size_in_bytes}\r\nContent-Type: text/plain\r\n\r\n
+            ```
 - PEDAC: Data Structures And Algorithms
     - helper functions:
         - `parse_http_request(request: bytes) -> hashmap`
@@ -230,10 +256,12 @@ git push origin master
                     - headers:
                         - `Content-Type` = `text/plain`
                         - `Content-Length` = length of `{str}` in bytes
+                        - if key `Accept-Encoding` in `request_dict` and its value is `gzip`,
+                            - add header & value `Content-Encoding: gzip`
                     - body:
                         - set to `{str}`
             - if `request_path` is `/user-agent`,
-                - set string `user_agent` to `request["headers"]["user-agent"]`
+                - set string `user_agent` to `request_dict["headers"]["user-agent"]`
                 - send HTTP `200 OK` response with:
                     - headers:
                         - `Content-Type` = `text/plain`
