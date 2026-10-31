@@ -35,3 +35,4 @@ Note: This section is for stages 2 and beyond.
    `app/main.py`.
 1. Run `codecrafters submit` to submit your solution to CodeCrafters. Test
    output will be streamed to your terminal.
+1. Run `codecrafters test` to test your solution on CodeCrafters.
