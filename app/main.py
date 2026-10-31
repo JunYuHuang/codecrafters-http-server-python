@@ -1,3 +1,4 @@
+import gzip
 import os
 import os.path
 import socket
@@ -42,7 +43,7 @@ def parse_http_request(request: bytes) -> dict:
         return res
 
     body_end_pos = body_start_pos + int(res["headers"]["content-length"]) - 1
-    res["body"] = request[body_start_pos:body_end_pos + 1]
+    res["body"]: bytes = request[body_start_pos:body_end_pos + 1]
 
     return res
 
@@ -69,11 +70,20 @@ def handle_http_client(
         )
         response = b'HTTP/1.1 200 OK\r\n'
         response += b'Content-Type: text/plain\r\n'
-        response += b'Content-Length: ' + f"{echo_str_len}".encode() + b'\r\n'
+
         if has_accept_encoding_gzip:
+            echo_str_compressed = gzip.compress(echo_str.encode())
+            echo_str_compressed_len = len(echo_str_compressed)
             response += b'Content-Encoding: gzip\r\n'
-        response += b'\r\n'
-        response += echo_str.encode()
+            response += b'Content-Length: '
+            response += f"{echo_str_compressed_len}".encode() + b'\r\n'
+            response += b'\r\n'
+            response += echo_str_compressed
+        else:
+            response += b'Content-Length: '
+            response += f"{echo_str_len}".encode() + b'\r\n'
+            response += b'\r\n'
+            response += echo_str.encode()
     elif request_path == "/user-agent":
         user_agent = request_dict["headers"]["user-agent"]
         user_agent_len = len(user_agent.encode())
