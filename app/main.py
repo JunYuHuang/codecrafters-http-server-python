@@ -1,4 +1,7 @@
+import os
+import os.path
 import socket
+import sys
 import threading
 
 HOST = "localhost"
@@ -35,7 +38,9 @@ def parse_http_request(request: bytes) -> dict:
 
     return res
 
-def handle_http_client(client_socket: socket.socket, client_address: tuple) -> None:
+def handle_http_client(
+    client_socket: socket.socket, client_address: tuple, files_root_dir: str
+) -> None:
     request_bytes = client_socket.recv(REQUEST_BUFFER)
     request_dict = parse_http_request(request_bytes)
     print(f"==> HTTP Client sent request:")
@@ -47,7 +52,7 @@ def handle_http_client(client_socket: socket.socket, client_address: tuple) -> N
         request_path = request_dict["request_line"]["request_target"]
 
     response = b''
-    if len(request_path) > 6 and request_path[:6] == "/echo/":
+    if len(request_path) >= 6 and request_path[:6] == "/echo/":
         echo_str = request_path[6:]
         echo_str_len = len(echo_str.encode())
         response = b'HTTP/1.1 200 OK\r\n'
@@ -63,6 +68,23 @@ def handle_http_client(client_socket: socket.socket, client_address: tuple) -> N
         response += b'Content-Length: ' + f"{user_agent_len}".encode()
         response += b'\r\n\r\n'
         response += user_agent.encode()
+    elif len(request_path) > 6 and request_path[:7] == "/files/":
+        filename = request_path[7:]
+        file_path = files_root_dir + filename
+        response = b''
+    
+        if os.path.exists(file_path):
+            response += b'HTTP/1.1 200 OK\r\n'
+            response += b'Content-Type: application/octet-stream\r\n'
+            file_size = os.stat(file_path).st_size
+            response += b'Content-Length: ' + f"{file_size}".encode()
+            response += b'\r\n\r\n'
+            file = open(file_path, "rb")
+            response += file.read()
+            file.close()
+        else:
+            response += b'HTTP/1.1 404 Not Found\r\n'
+            response += b'Content-Length: 0\r\n\r\n'
     elif request_path == "/":
         response = b'HTTP/1.1 200 OK\r\n'
         response += b'Content-Length: 0\r\n\r\n'
@@ -76,6 +98,10 @@ def handle_http_client(client_socket: socket.socket, client_address: tuple) -> N
     client_socket.close()
 
 def main():
+    files_root_dir = "/"
+    if len(sys.argv) == 3 and sys.argv[1] == "--directory":
+        files_root_dir = sys.argv[2]
+        
     server_socket = socket.create_server((HOST, PORT), reuse_port=True)
     server_socket.listen()
     print(f"==> HTTP Server running at {(HOST, PORT)}")
@@ -86,7 +112,8 @@ def main():
         print(f"==> HTTP Client at {client_address} connected")
 
         handle_client_thread = threading.Thread(
-            target=handle_http_client, args=(client_socket, client_address)
+            target=handle_http_client,
+            args=(client_socket, client_address, files_root_dir)
         )
         handle_client_thread.start()
 

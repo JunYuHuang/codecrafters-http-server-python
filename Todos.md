@@ -8,7 +8,7 @@
 - [x] Respond with body
 - [x] Read header
 - [x] Concurrent connections
-- [ ] Return a file
+- [x] Return a file
 - [ ] Read request body
 
 ## HTTP Compresssion
