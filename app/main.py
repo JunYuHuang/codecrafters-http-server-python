@@ -41,8 +41,8 @@ def parse_http_request(request: bytes) -> dict:
     # Return early if no body
     if (
         res["headers"].get("content-length", 0) == "0" or
-        body_start_pos >= REQUEST_LEN:
-    )
+        body_start_pos >= REQUEST_LEN
+    ):
         return res
 
     body_end_pos = body_start_pos + int(res["headers"]["content-length"]) - 1
