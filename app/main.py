@@ -50,81 +50,89 @@ def parse_http_request(request: bytes) -> dict:
 def handle_http_client(
     client_socket: socket.socket, client_address: tuple, files_root_dir: str
 ) -> None:
-    request_bytes = client_socket.recv(REQUEST_BUFFER)
-    request_dict = parse_http_request(request_bytes)
-    print(f"==> HTTP Client sent request:")
-    print(request_bytes)
-    print(request_dict)
+    should_close_connection = False
 
-    request_path = "/"
-    if request_dict:
-        request_path = request_dict["request_line"]["request_target"]
+    while not should_close_connection:
+        request_bytes = client_socket.recv(REQUEST_BUFFER)
+        request_dict = parse_http_request(request_bytes)
+        print(f"==> HTTP Client sent request:")
+        print(request_bytes)
+        print(request_dict)
 
-    response = b''
-    if len(request_path) >= 6 and request_path[:6] == "/echo/":
-        echo_str = request_path[6:]
-        echo_str_len = len(echo_str.encode())
-        has_accept_encoding_gzip = (
-            "accept-encoding" in request_dict["headers"] and
-            request_dict["headers"]["accept-encoding"].find("gzip") != -1
+        request_path = "/"
+        if request_dict:
+            request_path = request_dict["request_line"]["request_target"]
+
+        should_close_connection = (
+            "connection" in request_dict["headers"] and
+            request_dict["headers"]["connection"] == "close"
         )
-        response = b'HTTP/1.1 200 OK\r\n'
-        response += b'Content-Type: text/plain\r\n'
 
-        if has_accept_encoding_gzip:
-            echo_str_compressed = gzip.compress(echo_str.encode())
-            echo_str_compressed_len = len(echo_str_compressed)
-            response += b'Content-Encoding: gzip\r\n'
-            response += b'Content-Length: '
-            response += f"{echo_str_compressed_len}".encode() + b'\r\n'
-            response += b'\r\n'
-            response += echo_str_compressed
-        else:
-            response += b'Content-Length: '
-            response += f"{echo_str_len}".encode() + b'\r\n'
-            response += b'\r\n'
-            response += echo_str.encode()
-    elif request_path == "/user-agent":
-        user_agent = request_dict["headers"]["user-agent"]
-        user_agent_len = len(user_agent.encode())
-        response = b'HTTP/1.1 200 OK\r\n'
-        response += b'Content-Type: text/plain\r\n'
-        response += b'Content-Length: ' + f"{user_agent_len}".encode()
-        response += b'\r\n\r\n'
-        response += user_agent.encode()
-    elif len(request_path) > 6 and request_path[:7] == "/files/":
-        method = request_dict["request_line"]["method"]
-        filename = request_path[7:]
-        file_path = files_root_dir + filename
         response = b''
-    
-        if method == "POST" and os.path.exists(files_root_dir):
-            filename_file = open(file_path, "wb")
-            filename_file.write(request_dict["body"])
-            filename_file.close()
-            response += b'HTTP/1.1 201 Created\r\n'
-            response += b'Content-Length: 0\r\n\r\n'
-        elif method == "GET" and os.path.exists(file_path):
-            response += b'HTTP/1.1 200 OK\r\n'
-            response += b'Content-Type: application/octet-stream\r\n'
-            file_size = os.stat(file_path).st_size
-            response += b'Content-Length: ' + f"{file_size}".encode()
-            response += b'\r\n\r\n'
-            filename_file = open(file_path, "rb")
-            response += filename_file.read()
-            filename_file.close()
-        else:
-            response += b'HTTP/1.1 404 Not Found\r\n'
-            response += b'Content-Length: 0\r\n\r\n'
-    elif request_path == "/":
-        response = b'HTTP/1.1 200 OK\r\n'
-        response += b'Content-Length: 0\r\n\r\n'
-    else:
-        response = b'HTTP/1.1 404 Not Found\r\n'
-        response += b'Content-Length: 0\r\n\r\n'
+        if len(request_path) >= 6 and request_path[:6] == "/echo/":
+            echo_str = request_path[6:]
+            echo_str_len = len(echo_str.encode())
+            has_accept_encoding_gzip = (
+                "accept-encoding" in request_dict["headers"] and
+                request_dict["headers"]["accept-encoding"].find("gzip") != -1
+            )
+            response = b'HTTP/1.1 200 OK\r\n'
+            response += b'Content-Type: text/plain\r\n'
 
-    client_socket.sendall(response)
-    print(f"==> Sent response to HTTP Client at {client_address}:\n{response}")
+            if has_accept_encoding_gzip:
+                echo_str_compressed = gzip.compress(echo_str.encode())
+                echo_str_compressed_len = len(echo_str_compressed)
+                response += b'Content-Encoding: gzip\r\n'
+                response += b'Content-Length: '
+                response += f"{echo_str_compressed_len}".encode() + b'\r\n'
+                response += b'\r\n'
+                response += echo_str_compressed
+            else:
+                response += b'Content-Length: '
+                response += f"{echo_str_len}".encode() + b'\r\n'
+                response += b'\r\n'
+                response += echo_str.encode()
+        elif request_path == "/user-agent":
+            user_agent = request_dict["headers"]["user-agent"]
+            user_agent_len = len(user_agent.encode())
+            response = b'HTTP/1.1 200 OK\r\n'
+            response += b'Content-Type: text/plain\r\n'
+            response += b'Content-Length: ' + f"{user_agent_len}".encode()
+            response += b'\r\n\r\n'
+            response += user_agent.encode()
+        elif len(request_path) > 6 and request_path[:7] == "/files/":
+            method = request_dict["request_line"]["method"]
+            filename = request_path[7:]
+            file_path = files_root_dir + filename
+            response = b''
+        
+            if method == "POST" and os.path.exists(files_root_dir):
+                filename_file = open(file_path, "wb")
+                filename_file.write(request_dict["body"])
+                filename_file.close()
+                response += b'HTTP/1.1 201 Created\r\n'
+                response += b'Content-Length: 0\r\n\r\n'
+            elif method == "GET" and os.path.exists(file_path):
+                response += b'HTTP/1.1 200 OK\r\n'
+                response += b'Content-Type: application/octet-stream\r\n'
+                file_size = os.stat(file_path).st_size
+                response += b'Content-Length: ' + f"{file_size}".encode()
+                response += b'\r\n\r\n'
+                filename_file = open(file_path, "rb")
+                response += filename_file.read()
+                filename_file.close()
+            else:
+                response += b'HTTP/1.1 404 Not Found\r\n'
+                response += b'Content-Length: 0\r\n\r\n'
+        elif request_path == "/":
+            response = b'HTTP/1.1 200 OK\r\n'
+            response += b'Content-Length: 0\r\n\r\n'
+        else:
+            response = b'HTTP/1.1 404 Not Found\r\n'
+            response += b'Content-Length: 0\r\n\r\n'
+
+        client_socket.sendall(response)
+        print(f"==> Sent response to HTTP Client at {client_address}:\n{response}")
 
     client_socket.close()
 
