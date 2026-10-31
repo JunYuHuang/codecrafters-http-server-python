@@ -14,7 +14,7 @@
 ## HTTP Compresssion
 
 - [x] Compression headers
-- [ ] Multiple compression schemes
+- [x] Multiple compression schemes
 - [ ] Gzip compression
 
 ## Persistent Connections

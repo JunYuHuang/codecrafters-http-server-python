@@ -63,13 +63,14 @@ def handle_http_client(
     if len(request_path) >= 6 and request_path[:6] == "/echo/":
         echo_str = request_path[6:]
         echo_str_len = len(echo_str.encode())
+        has_accept_encoding_gzip = (
+            "accept-encoding" in request_dict["headers"] and
+            request_dict["headers"]["accept-encoding"].find("gzip") != -1
+        )
         response = b'HTTP/1.1 200 OK\r\n'
         response += b'Content-Type: text/plain\r\n'
         response += b'Content-Length: ' + f"{echo_str_len}".encode() + b'\r\n'
-        if (
-            "accept-encoding" in request_dict["headers"] and
-            request_dict["headers"]["accept-encoding"] == "gzip"
-        ):
+        if has_accept_encoding_gzip:
             response += b'Content-Encoding: gzip\r\n'
         response += b'\r\n'
         response += echo_str.encode()
