@@ -20,5 +20,5 @@
 ## Persistent Connections
 
 - [x] Persistent connections
-- [ ] Concurrent persistent connections
+- [x] Concurrent persistent connections
 - [ ] Connection closure
