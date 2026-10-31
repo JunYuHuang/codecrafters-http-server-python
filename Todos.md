@@ -7,7 +7,7 @@
 - [x] Extract URL path
 - [x] Respond with body
 - [x] Read header
-- [ ] Concurrent connections
+- [x] Concurrent connections
 - [ ] Return a file
 - [ ] Read request body
 

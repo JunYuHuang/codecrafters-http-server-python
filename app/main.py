@@ -21,9 +21,8 @@ def parse_http_request(request: bytes) -> dict:
     headers_start_pos = request_line_end_pos + 2
     headers_end_pos = request.find(crlf + crlf)
 
-    # TODO: fix bug
     # Return early if no headers
-    if headers_end_pos == -1 or headers_end_pos == REQUEST_LEN - 4:
+    if headers_end_pos == -1 or request.find(b': ') == -1:
         return res
 
     headers = request[headers_start_pos:headers_end_pos].split(crlf)
